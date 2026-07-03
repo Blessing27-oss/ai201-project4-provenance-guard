@@ -5,3 +5,10 @@
 .venv/
 venv/
 env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# SQLite database (runtime data, not source)
+audit_log.db

@@ -1,3 +1,4 @@
+
 # Provenance Guard — Planning Doc
 
 A backend system that any creative sharing platform could plug into to classify submitted content, score confidence in that classification, surface a transparency label to users, and handle appeals from creators who believe they've been misclassified.
@@ -35,19 +36,19 @@ GET  /log       → returns audit log entries
                              │ text
                              ▼
                     ┌──────────────────────┐
-                    │ Signal 1: Stylometry  │
+                    │ Signal 1: Groq LLM    │
+                    │ (semantic/stylistic   │
+                    │  coherence judgment)  │
+                    └────────┬─────────────┘
+                             │ llm_score / verdict
+                             ▼
+                    ┌──────────────────────┐
+                    │ Signal 2: Stylometry  │
                     │ (sentence variance,   │
                     │  type-token ratio,    │
                     │  punctuation density) │
                     └────────┬─────────────┘
                              │ stylometric_score
-                             ▼
-                    ┌──────────────────────┐
-                    │ Signal 2: Groq LLM    │
-                    │ (semantic/stylistic   │
-                    │  coherence judgment)  │
-                    └────────┬─────────────┘
-                             │ llm_score / verdict
                              ▼
                     ┌──────────────────────┐
                     │ Combine Scores        │
@@ -122,16 +123,19 @@ Likely human (score 0.00–0.35):
 ## AI Tool Plan
 
 ### M3 — Submission endpoint + first signal
+
 - Spec sections provided: Detection Signals (stylometric portion), Architecture diagram
 - What I'll ask for: A Flask app skeleton with a POST /submit endpoint, plus a standalone stylometric_score(text) function implementing sentence length variance, type-token ratio, and punctuation density, normalized to 0–1
 - Verification: Run stylometric_score() directly against 3-4 sample texts (one obviously uniform/robotic, one obviously varied/human) before wiring it into the endpoint. Confirm scores trend in the expected direction.
 
 ### M4 — Second signal + confidence scoring
+
 - Spec sections provided: Detection Signals (Groq portion + combination formula), Uncertainty Representation (thresholds), Architecture diagram
 - What I'll ask for: A groq_score(text) function that prompts Groq for a verdict + confidence and converts it to the 0–1 "AI-likelihood" scale, plus a combine_scores() function implementing the 0.6/0.4 weighting
 - Verification: Test combine_scores() with hand-picked score pairs (e.g., both signals agree it's AI, both agree it's human, signals disagree) and confirm the combined score lands in the expected threshold band each time
 
 ### M5 — Production layer (labels + appeals)
+
 - Spec sections provided: Transparency Label Design (three label variants), Appeals Workflow, Architecture diagram
 - What I'll ask for: A get_label(confidence_score) function mapping score to the correct label text, plus a POST /appeal endpoint that logs the appeal and updates content status to "under review"
 - Verification: Call get_label() with a score from each of the three bands and confirm the correct exact label text is returned; submit a test appeal and confirm the audit log gets a new entry and the content status changes correctly
